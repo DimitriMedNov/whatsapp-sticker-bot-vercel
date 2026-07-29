@@ -73,6 +73,8 @@ Copia `.env.example` como referencia. Usa valores reales sólo en Vercel o en un
 | `GRAPH_API_VERSION` | Versión de Graph API, por ejemplo `v25.0`. |
 | `SUPABASE_URL` | URL del proyecto de Supabase. |
 | `SUPABASE_SECRET_KEY` | Clave secreta exclusivamente de backend; nunca se envía al cliente ni se registra. |
+| `ADMIN_DASHBOARD_PASSWORD` | Contraseña privada para `/admin`; sólo se configura en Vercel. |
+| `ADMIN_SESSION_SECRET` | Secreto aleatorio para firmar sesiones y acciones administrativas. |
 
 ## Instalación y pruebas
 
@@ -94,14 +96,25 @@ Ejecuta manualmente, en este orden, desde el SQL Editor de Supabase o desde tu f
 
 1. `supabase/migrations/001_sticker_bot_schema.sql`
 2. `supabase/migrations/002_claim_sticker_request.sql`
+3. `supabase/migrations/003_admin_dashboard_rpc.sql`
 
 La primera crea `bot_users`, `batch_sessions`, `processing_events`, índices y RLS sin políticas públicas. La segunda crea la RPC `claim_sticker_request` y las RPC auxiliares de transición de eventos. El acceso de ejecución queda revocado para `public`, `anon` y `authenticated`, y se concede al rol backend `service_role`.
 
 No almacenes imágenes, URLs firmadas, nombres de perfil ni payloads completos en Supabase. Sólo se conservan teléfono, `message_id`, tipo, estado, tamaños, duración, errores técnicos y contadores de lote.
 
+La migración `003_admin_dashboard_rpc.sql` es idempotente y agrega las RPC administrativas. Ejecútala manualmente en el SQL Editor de Supabase después de las dos migraciones anteriores; no se ejecuta desde este repositorio ni durante el despliegue.
+
+## Panel administrativo
+
+Configura `ADMIN_DASHBOARD_PASSWORD` y `ADMIN_SESSION_SECRET` en Vercel como variables privadas de Production (y Preview/Development si corresponde). Usa una contraseña larga y un secreto aleatorio de al menos 32 bytes. Entra en `https://tu-proyecto.vercel.app/admin`; el login se envía por POST y la sesión queda en una cookie `HttpOnly`, `Secure`, `SameSite=Strict` con máximo de ocho horas. El botón **Cerrar sesión** revoca la cookie localmente.
+
+El panel muestra volumen de stickers, usuarios activos, lotes, errores, tasa de éxito, duración y tamaño promedio, una gráfica diaria de siete días, actividad reciente, usuarios y lotes paginados. Los teléfonos se enmascaran como `********0366`; el navegador nunca recibe el número completo. Bloquear o desbloquear requiere confirmación visual y utiliza un identificador de acción cifrado que sólo puede resolver el backend.
+
+Si una métrica falla, el panel muestra `No se pudieron cargar las métricas. Intenta nuevamente.` y permite reintentar con **Actualizar**. La actualización automática ocurre cada 60 segundos mientras la pestaña está visible y se detiene al ocultarla.
+
 ## Configuración en Vercel
 
-En el proyecto `whatsapp-sticker-bot-vercel`, abre `Settings → Environment Variables` y añade las seis variables del apartado anterior. Configúralas en los entornos que realmente uses (`Production`, `Preview` y/o `Development`). `SUPABASE_SECRET_KEY` debe ser una variable privada de servidor.
+En el proyecto `whatsapp-sticker-bot-vercel`, abre `Settings → Environment Variables` y añade las ocho variables del apartado anterior. Configúralas en los entornos que realmente uses (`Production`, `Preview` y/o `Development`). `SUPABASE_SECRET_KEY`, `ADMIN_DASHBOARD_PASSWORD` y `ADMIN_SESSION_SECRET` deben ser variables privadas de servidor.
 
 Tras aplicar las migraciones y guardar las variables, realiza un redeploy desde `Deployments → ... → Redeploy` o mediante el flujo de despliegue habitual del proyecto. Este cambio local no hace deploy automáticamente.
 
@@ -148,3 +161,5 @@ Si el despliegue nuevo presenta problemas:
 5. Si se necesita revertir el código, restaura el commit anterior mediante el flujo normal del repositorio y redeploya sólo después de revisar compatibilidad con las tablas nuevas.
 
 No borres las tablas ni ejecutes SQL destructivo como parte de un rollback de aplicación.
+
+Para revertir únicamente el panel, promueve el despliegue estable anterior en Vercel. La migración `003` es aditiva, por lo que puede permanecer aplicada mientras se revierte el código. Si se requiere retirar sus funciones, hazlo sólo con una migración SQL revisada y después de confirmar que ningún despliegue las utiliza. No reviertas ni modifiques las migraciones `001` o `002`, ni cambies las rutas de Meta.

@@ -7,6 +7,14 @@
   },
   "rewrites": [
     {
+      "source": "/admin",
+      "destination": "/admin/index.html"
+    },
+    {
+      "source": "/api/admin/users/:action_id/status",
+      "destination": "/api/admin/user-status"
+    },
+    {
       "source": "/",
       "destination": "/api/webhook"
     },

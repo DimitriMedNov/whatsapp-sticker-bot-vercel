@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node --check api/webhook.mjs && node --check lib/*.mjs",
+    "check": "node --check api/webhook.mjs && node --check api/admin/*.mjs && node --check lib/*.mjs",
     "test": "node test/*.test.mjs"
   },
   "engines": {

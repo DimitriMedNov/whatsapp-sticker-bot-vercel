@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Admin | Sticker Bot MedNov</title>
+  <link rel="stylesheet" href="/admin/admin.css">
+</head>
+<body>
+  <main id="app" class="shell">
+    <section id="login-view" class="login-card" aria-labelledby="login-title">
+      <div class="eyebrow">MEDNOV / PRIVATE CONSOLE</div>
+      <h1 id="login-title">Sticker Bot<span>Admin</span></h1>
+      <p>Monitorea procesamiento, lotes y usuarios desde un espacio privado.</p>
+      <form id="login-form">
+        <label for="password">Contraseña administrativa</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required>
+        <button class="primary" type="submit">Entrar al panel</button>
+        <div id="login-error" class="form-error" role="alert"></div>
+      </form>
+    </section>
+
+    <section id="dashboard-view" hidden>
+      <header class="topbar">
+        <div><div class="eyebrow">PRIVATE OPERATIONS</div><h1>Sticker Bot <span>MedNov</span></h1></div>
+        <div class="top-actions"><span id="system-pill" class="pill">Comprobando...</span><button id="refresh" class="secondary">Actualizar</button><button id="logout" class="ghost">Cerrar sesión</button></div>
+      </header>
+      <div id="page-error" class="notice error" role="alert" hidden></div>
+      <section class="filters" aria-label="Filtros">
+        <label>Periodo <select id="period"><option value="today">Hoy</option><option value="24h" selected>Últimas 24 horas</option><option value="7d">Últimos 7 días</option></select></label>
+        <label>Estado <select id="status"><option value="">Todos</option><option value="success">Success</option><option value="error">Error</option><option value="rejected">Rechazado</option></select></label>
+        <label>Tipo <select id="type"><option value="">Todos</option><option value="sticker">Sticker</option><option value="batch_sticker">Batch sticker</option></select></label>
+        <label>Últimos 4 dígitos <input id="phone-search" inputmode="numeric" maxlength="4" placeholder="0366"></label>
+      </section>
+      <section id="cards" class="cards" aria-live="polite"></section>
+      <div class="grid two"><section class="panel chart-panel"><div class="panel-title"><h2>Procesamiento diario</h2><span>Últimos 7 días</span></div><div id="chart" class="chart"></div></section><section class="panel system-panel"><div class="panel-title"><h2>Estado del sistema</h2></div><div id="system-details"></div></section></div>
+      <section class="panel"><div class="panel-title"><h2>Actividad reciente</h2><span>Máximo 100 registros</span></div><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Teléfono</th><th>Tipo</th><th>Estado</th><th>Entrada</th><th>Salida</th><th>Duración</th><th>Error</th></tr></thead><tbody id="activity-body"></tbody></table></div></section>
+      <section class="panel"><div class="panel-title"><h2>Usuarios</h2><span>Acciones protegidas</span></div><div class="table-wrap"><table><thead><tr><th>Teléfono</th><th>Creado</th><th>Actividad</th><th>Total</th><th>Última hora</th><th>Estado</th><th></th></tr></thead><tbody id="users-body"></tbody></table></div></section>
+      <section class="panel"><div class="panel-title"><h2>Lotes</h2><span>Más recientes</span></div><div class="table-wrap"><table><thead><tr><th>Teléfono</th><th>Estado</th><th>Recibidos</th><th>Procesados</th><th>Fallidos</th><th>Inicio</th><th>Expira</th><th>Cierre</th></tr></thead><tbody id="batches-body"></tbody></table></div></section>
+    </section>
+  </main>
+  <script type="module" src="/admin/admin.js"></script>
+</body>
+</html>

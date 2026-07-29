@@ -1,0 +1,15 @@
+import { getAdminSession } from "../../lib/admin-auth.mjs";
+import { createAdminRepository, jsonResponse, adminError, readAdminConfig, removePrivatePhone } from "../../lib/admin-api.mjs";
+
+export default { async fetch(request) {
+  const config = readAdminConfig();
+  if (!getAdminSession(request, config.sessionSecret)) return jsonResponse({ ok: false, error: "No autenticado", code: "UNAUTHORIZED" }, 401);
+  try {
+    const url = new URL(request.url);
+    const data = await createAdminRepository(config).getMetrics({ status: url.searchParams.get("status"), processingType: url.searchParams.get("type"), phoneSuffix: url.searchParams.get("phone"), period: url.searchParams.get("period") });
+    return jsonResponse({ ok: true, data: removePrivatePhone({ ...data, system: { ...data.system, supabase_connected: true, meta_configured: config.metaConfigured, version: config.version } }) });
+  } catch (error) {
+    console.error(JSON.stringify({ event: "admin_metrics_error", code: error?.code || "SUPABASE_ERROR" }));
+    return adminError("SUPABASE_ERROR");
+  }
+} };
