@@ -7,7 +7,7 @@
     "check": "node --check api/webhook.mjs"
   },
   "engines": {
-    "node": "22.x"
+    "node": "24.x"
   },
   "dependencies": {
     "@vercel/functions": "^3.7.6",
