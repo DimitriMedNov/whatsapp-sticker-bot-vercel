@@ -4,13 +4,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node --check api/webhook.mjs"
+    "check": "node --check api/webhook.mjs && node --check lib/*.mjs",
+    "test": "node test/*.test.mjs"
   },
   "engines": {
     "node": "24.x"
   },
   "dependencies": {
     "@vercel/functions": "^3.7.6",
+    "@supabase/supabase-js": "^2.53.0",
     "sharp": "^0.35.3"
   }
 }

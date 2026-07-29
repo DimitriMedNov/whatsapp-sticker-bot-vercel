@@ -1,126 +1,150 @@
 # WhatsApp Sticker Bot para Vercel
 
-Bot de WhatsApp que convierte imágenes recibidas en stickers y los devuelve automáticamente al mismo chat. Está implementado como una función serverless de Vercel y utiliza la Cloud API de WhatsApp de Meta.
+Bot de WhatsApp que convierte imágenes recibidas en stickers y los devuelve al mismo chat. Corre como una función serverless de Vercel y usa la Cloud API de WhatsApp de Meta. Supabase conserva únicamente teléfonos, estados, contadores y metadatos técnicos; las imágenes nunca se guardan en Supabase ni en disco.
 
-## Cómo funciona
+## Arquitectura
 
-1. Meta envía el evento al webhook mediante `POST /webhook`.
-2. La función responde `200 OK` inmediatamente y continúa el procesamiento con `waitUntil()`.
-3. El bot valida el `Phone Number ID` del evento para ignorar mensajes de otros números.
-4. Descarga la imagen desde la API de Meta.
-5. `sharp` la rota según sus metadatos EXIF, la adapta a un lienzo transparente de `512 × 512 px` y la comprime como WebP hasta quedar por debajo de `100 KB`.
-6. Sube el WebP a Meta y envía el sticker al remitente, relacionándolo con el mensaje original.
+```text
+Meta WhatsApp
+     │ GET verificación / POST evento
+     ▼
+api/webhook.mjs
+     │ responde 200 inmediatamente
+     └── waitUntil()
+          ├── lib/meta.mjs       API de medios y mensajes de Meta
+          ├── lib/stickers.mjs   Sharp: WebP transparente 512 × 512
+          ├── lib/supabase.mjs   Persistencia y RPCs con secret key
+          ├── lib/processor.mjs  Validación, límites y procesamiento
+          └── lib/batches.mjs    Sesiones lote y resúmenes
+```
 
-Si el usuario envía texto, audio, video u otro tipo de mensaje, recibe una indicación para enviar una imagen. Si una conversión falla, el bot envía un mensaje de error y registra el detalle en los logs de Vercel.
+El endpoint mantiene las rutas existentes:
 
-## Requisitos
+- `GET /` y `GET /webhook`: salud o verificación de Meta.
+- `POST /webhook`: recibe eventos y responde `200 OK` antes del procesamiento.
+- `/api/webhook`: función directa de Vercel.
 
-- Node.js `22.x`.
-- Una cuenta de Vercel.
-- Una aplicación en [Meta for Developers](https://developers.facebook.com/) con WhatsApp Cloud API configurada.
-- Un número de WhatsApp Business y un token con permisos para leer medios, subir archivos y enviar mensajes.
+La función conserva `maxDuration: 60` en `vercel.json` y no define `memory`.
+
+## Flujo de una imagen
+
+1. Se valida que el evento pertenezca al `PHONE_NUMBER_ID` configurado.
+2. Se normaliza el teléfono mexicano `521XXXXXXXXXX` a `52XXXXXXXXXX`.
+3. Se consulta el MIME y tamaño de la imagen en Meta.
+4. Se aceptan sólo JPG, PNG y WebP, con un máximo de 5 MB.
+5. Supabase reclama la solicitud mediante una RPC con bloqueo por teléfono. Esto aplica bloqueo, idempotencia y límite horario sin depender de la memoria de Vercel.
+6. La imagen se descarga y se transforma con Sharp a WebP transparente de `512 × 512 px` y máximo `100 KB`.
+7. Se sube el sticker a Meta y se envía al usuario.
+8. El evento se completa como `success` o `error`, incluyendo tamaños, duración y error técnico controlado.
+
+Cada imagen tiene un timeout global de 45 segundos. Las peticiones `fetch` usan `AbortController` para dejar margen antes del límite de 60 segundos de Vercel.
+
+## Comandos
+
+Los comandos ignoran mayúsculas y espacios externos.
+
+| Comando | Acción |
+| --- | --- |
+| `lote` | Abre una sesión de 5 minutos para hasta 10 imágenes. Si ya existe una, informa su progreso. |
+| `estado` | Muestra imágenes recibidas, procesadas, fallidas, máximo y minutos restantes. |
+| `fin` | Cierra la sesión y muestra `X` stickers creados y `Y` errores. |
+
+Las imágenes recibidas durante una sesión se registran como `batch_sticker` y se procesan inmediatamente. Las imágenes fuera de una sesión se registran como `sticker`. El lote se cierra automáticamente al aceptar la décima imagen y envía un resumen cuando termina su procesamiento.
+
+## Límites
+
+- 10 stickers por teléfono en una ventana móvil de una hora.
+- 10 imágenes por lote.
+- 5 minutos por lote.
+- 5 MB por imagen de entrada.
+- 100 KB por sticker WebP de salida.
+
+Los mensajes duplicados se detectan con `message_id` único en Supabase. El `Set` local sólo es una optimización secundaria para instancias calientes.
 
 ## Variables de entorno
 
-Copia `.env.example` como referencia y configura estos valores en Vercel. No subas un archivo `.env` al repositorio.
+Copia `.env.example` como referencia. Usa valores reales sólo en Vercel o en un entorno local seguro; nunca subas `.env`.
 
-| Variable | Descripción |
+| Variable | Uso |
 | --- | --- |
-| `WEBHOOK_VERIFY_TOKEN` | Token secreto que eliges y que debe coincidir con el token usado al configurar el webhook en Meta. |
-| `WHATSAPP_TOKEN` | Token de acceso de Meta para la WhatsApp Cloud API. Debe mantenerse como secreto. |
-| `PHONE_NUMBER_ID` | ID del número de teléfono de WhatsApp Business que recibirá y enviará mensajes. |
-| `GRAPH_API_VERSION` | Versión de Graph API, por ejemplo `v25.0`. Si se omite, el código usa `v25.0`. |
+| `WEBHOOK_VERIFY_TOKEN` | Token que Meta usa para verificar el webhook. |
+| `WHATSAPP_TOKEN` | Token privado para la Cloud API de WhatsApp. |
+| `PHONE_NUMBER_ID` | ID del número de WhatsApp Business. |
+| `GRAPH_API_VERSION` | Versión de Graph API, por ejemplo `v25.0`. |
+| `SUPABASE_URL` | URL del proyecto de Supabase. |
+| `SUPABASE_SECRET_KEY` | Clave secreta exclusivamente de backend; nunca se envía al cliente ni se registra. |
 
-## Instalación y comprobación local
+## Instalación y pruebas
+
+Requiere Node.js `24.x`.
 
 ```bash
 npm install
 npm run check
+npm test
 ```
 
-`npm run check` comprueba la sintaxis de `api/webhook.mjs`. La función depende de las credenciales de Meta, por lo que una prueba local completa requiere exponer el endpoint públicamente y configurar un webhook de prueba en Meta; una URL local no es accesible directamente desde sus servidores.
+`npm test` usa `node:test` y mocks. No llama a Meta ni a Supabase. Si tu equipo local usa Node.js `26.x`, npm puede mostrar `EBADENGINE`; el runtime desplegado debe permanecer en `24.x`.
 
-## Despliegue en Vercel
+## Migraciones de Supabase
 
-La forma más sencilla es importar este repositorio desde el panel de Vercel:
+Las migraciones son idempotentes y no destruyen información. No se ejecutan automáticamente desde este repositorio.
 
-1. Importa el repositorio en Vercel.
-2. Añade las cuatro variables de entorno para los entornos que quieras usar (`Production`, `Preview` y/o `Development`).
-3. Despliega el proyecto.
-4. Conserva la URL pública de Vercel, por ejemplo `https://tu-proyecto.vercel.app`.
+Ejecuta manualmente, en este orden, desde el SQL Editor de Supabase o desde tu flujo controlado de migraciones:
 
-También puedes desplegar desde la CLI de Vercel:
+1. `supabase/migrations/001_sticker_bot_schema.sql`
+2. `supabase/migrations/002_claim_sticker_request.sql`
 
-```bash
-npx vercel
-npx vercel --prod
-```
+La primera crea `bot_users`, `batch_sessions`, `processing_events`, índices y RLS sin políticas públicas. La segunda crea la RPC `claim_sticker_request` y las RPC auxiliares de transición de eventos. El acceso de ejecución queda revocado para `public`, `anon` y `authenticated`, y se concede al rol backend `service_role`.
 
-## Configuración del webhook en Meta
+No almacenes imágenes, URLs firmadas, nombres de perfil ni payloads completos en Supabase. Sólo se conservan teléfono, `message_id`, tipo, estado, tamaños, duración, errores técnicos y contadores de lote.
 
-En la configuración de WhatsApp de tu aplicación de Meta:
+## Configuración en Vercel
 
-- **Callback URL:** `https://tu-proyecto.vercel.app/webhook`
-- **Verify token:** el mismo valor de `WEBHOOK_VERIFY_TOKEN`
-- Suscribe el campo **messages**.
+En el proyecto `whatsapp-sticker-bot-vercel`, abre `Settings → Environment Variables` y añade las seis variables del apartado anterior. Configúralas en los entornos que realmente uses (`Production`, `Preview` y/o `Development`). `SUPABASE_SECRET_KEY` debe ser una variable privada de servidor.
 
-Meta primero hace una petición `GET` de verificación. El bot devuelve el `hub.challenge` cuando el token coincide y responde `403` si la verificación es incorrecta.
+Tras aplicar las migraciones y guardar las variables, realiza un redeploy desde `Deployments → ... → Redeploy` o mediante el flujo de despliegue habitual del proyecto. Este cambio local no hace deploy automáticamente.
 
-Después, los mensajes llegan mediante `POST`. La ruta raíz (`/`) y `/webhook` están reescritas hacia `/api/webhook` por `vercel.json`.
-
-## Rutas y respuestas
-
-| Método | Ruta | Uso |
-| --- | --- | --- |
-| `GET` | `/` | Comprobación de salud. Devuelve JSON con `ok: true`. |
-| `GET` | `/webhook` | Verificación de Meta o comprobación de salud. |
-| `POST` | `/webhook` | Recepción de eventos de WhatsApp. Devuelve `OK` inmediatamente. |
-| `GET/POST` | `/api/webhook` | Función directa de Vercel. |
-
-Los demás métodos reciben `405 Method Not Allowed` y el encabezado `Allow: GET, POST`. Un `POST` con JSON inválido recibe `400`.
-
-## Estructura
+No cambies el dominio ni la URL configurada en Meta. El callback sigue siendo:
 
 ```text
-.
-├── api/
-│   └── webhook.mjs    # Función HTTP y lógica del bot
-├── .env.example       # Plantilla de variables de entorno
-├── package.json       # Dependencias y scripts
-├── vercel.json        # Rewrites y recursos de la función
-└── README.md
+https://tu-proyecto.vercel.app/webhook
 ```
 
-## Detalles importantes
+## Seguridad y privacidad
 
-- La función se configura con hasta `60` segundos y `1024 MB` de memoria en `vercel.json`.
-- La deduplicación usa un `Set` en memoria y conserva como máximo 1000 IDs. Evita reintentos duplicados mientras la instancia de Vercel permanezca caliente, pero no sustituye una base de datos de idempotencia entre instancias.
-- Para números mexicanos, el código normaliza un remitente de 13 dígitos con prefijo `521` al formato `52...` antes de responder.
-- `sharp` preserva la orientación EXIF y agrega transparencia alrededor de imágenes que no son cuadradas.
-- El token de WhatsApp se envía como encabezado `Authorization` únicamente en las peticiones a Meta. No lo registres en logs ni lo incluyas en el cliente.
+- No se imprimen tokens, claves, imágenes, URLs firmadas completas ni payloads innecesarios.
+- Los logs estructurados muestran sólo IDs de mensaje, tipo, estado, tamaños, duración y el teléfono enmascarado como `***5678`.
+- RLS está activado en las tres tablas y no existen políticas públicas.
+- La clave de Supabase se usa únicamente desde `lib/supabase.mjs` en el backend.
+- `.gitignore` excluye `.env`, `.env.*` y `.vercel/`, salvo `.env.example`.
 
 ## Solución de problemas
 
-**Meta no verifica el webhook**
+**La migración RPC falla**
 
-- Comprueba que la URL sea pública y termine en `/webhook`.
-- Verifica que `WEBHOOK_VERIFY_TOKEN` coincida exactamente con el token introducido en Meta.
-- Revisa los logs de la función en Vercel.
+- Ejecuta las dos migraciones en orden.
+- Verifica que el proyecto tenga disponibles `pgcrypto`, RLS y el rol backend esperado.
+- No copies claves ni tokens en tickets o logs.
 
-**El bot no responde**
+**El bot responde que el servicio está ocupado**
 
-- Confirma `WHATSAPP_TOKEN`, `PHONE_NUMBER_ID` y `GRAPH_API_VERSION`.
-- Comprueba que el número de Meta sea el mismo que aparece en `PHONE_NUMBER_ID`.
-- Revisa que el campo `messages` esté suscrito y que el token tenga permisos suficientes.
+- Revisa los logs breves de Vercel por `supabase_error`, `META_API_ERROR` o `PROCESSING_TIMEOUT`.
+- Confirma que `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `WHATSAPP_TOKEN` y `PHONE_NUMBER_ID` estén configuradas en el entorno desplegado.
 
-**La imagen no se convierte**
+**El webhook no verifica**
 
-- Envía una imagen JPG o PNG válida.
-- Revisa los logs para identificar errores de descarga, permisos de Meta o compresión.
-- El resultado debe poder comprimirse por debajo de `100 KB`; imágenes muy grandes o complejas pueden no cumplir ese límite.
+- Mantén `GET /webhook` y el mismo `WEBHOOK_VERIFY_TOKEN` en Meta y Vercel.
+- No cambies el dominio ni las rewrites de `vercel.json`.
 
-## Seguridad
+## Rollback
 
-- Usa tokens largos y aleatorios para `WEBHOOK_VERIFY_TOKEN`.
-- Configura los secretos en Vercel y rótalos si se exponen.
-- Mantén `.env` fuera de Git; el `.gitignore` ya excluye los archivos de entorno salvo `.env.example`.
+Si el despliegue nuevo presenta problemas:
+
+1. En Vercel abre `Deployments`.
+2. Selecciona el último despliegue conocido como estable.
+3. Usa `... → Promote to Production`.
+4. Conserva las migraciones aplicadas: son aditivas y no destruyen tablas ni datos.
+5. Si se necesita revertir el código, restaura el commit anterior mediante el flujo normal del repositorio y redeploya sólo después de revisar compatibilidad con las tablas nuevas.
+
+No borres las tablas ni ejecutes SQL destructivo como parte de un rollback de aplicación.
