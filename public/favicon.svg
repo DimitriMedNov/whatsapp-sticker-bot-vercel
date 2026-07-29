@@ -1,6 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
   <title>Sticker Bot MedNov</title>
-  <rect width="64" height="64" rx="14" fill="#10251d"/>
-  <path d="M16 45V19h8l8 13 8-13h8v26h-7V30l-9 13-9-13v15z" fill="#a8f34a"/>
-  <path d="M45 45h6v-6h-6z" fill="#10251d"/>
+  <defs>
+    <linearGradient id="surface" x1="8" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse"><stop stop-color="#254d3a"/><stop offset=".5" stop-color="#153528"/><stop offset="1" stop-color="#0b1d16"/></linearGradient>
+    <linearGradient id="mark" x1="20" y1="16" x2="44" y2="48" gradientUnits="userSpaceOnUse"><stop stop-color="#e5ffb8"/><stop offset=".46" stop-color="#b9f75d"/><stop offset="1" stop-color="#78c92a"/></linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="18" fill="url(#surface)"/>
+  <rect x="2.75" y="2.75" width="58.5" height="58.5" rx="17.25" fill="none" stroke="#dcffc0" stroke-opacity=".22" stroke-width="1.5"/>
+  <path d="M8 8h48c0 13-7 18-18 18H26C15 26 8 21 8 8z" fill="#f1ffdf" fill-opacity=".12"/>
+  <path d="M16 46V18h8l8 13 8-13h8v28h-7V30l-9 13-9-13v16z" fill="url(#mark)"/>
+  <circle cx="48" cy="46" r="3" fill="#dcffc0"/>
 </svg>
