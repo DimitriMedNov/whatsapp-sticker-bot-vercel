@@ -6,13 +6,15 @@ export default { async fetch(request) {
   if (!access) return jsonResponse({ ok: false, error: "No autenticado", code: "UNAUTHORIZED" }, 401);
   try {
     const url = new URL(request.url);
-    const [data, errorGroups, alerts, activityFeed] = await Promise.all([
+    const filters = { processingType: url.searchParams.get("type"), phoneSuffix: url.searchParams.get("phone"), period: url.searchParams.get("period") };
+    const [data, errorGroups, alerts, activityFeed, conversion] = await Promise.all([
       access.repository.getMetrics({ status: url.searchParams.get("status"), processingType: url.searchParams.get("type"), phoneSuffix: url.searchParams.get("phone"), period: url.searchParams.get("period") }),
       access.repository.getErrorGroups(),
       access.repository.getAlerts(),
       access.repository.getActivityFeed(),
+      access.repository.getConversion(filters),
     ]);
-    return jsonResponse({ ok: true, data: removePrivatePhone({ ...data, error_groups: errorGroups, alerts, activity_feed: activityFeed, system: { ...data.system, supabase_connected: true, meta_configured: config.metaConfigured, version: config.version, runtime: config.runtime, refreshed_at: new Date().toISOString() } }) });
+    return jsonResponse({ ok: true, data: removePrivatePhone({ ...data, error_groups: errorGroups, alerts, activity_feed: activityFeed, conversion, system: { ...data.system, supabase_connected: true, meta_configured: config.metaConfigured, version: config.version, runtime: config.runtime, refreshed_at: new Date().toISOString() } }) });
   } catch (error) {
     console.error(JSON.stringify({ event: "admin_metrics_error", code: error?.code || "SUPABASE_ERROR" }));
     return adminError("SUPABASE_ERROR");

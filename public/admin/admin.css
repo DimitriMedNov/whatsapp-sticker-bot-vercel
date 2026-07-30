@@ -226,6 +226,8 @@ h2 { margin-bottom: 0; font-size: 18px; letter-spacing: -.025em; }
 .queue-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--blue); box-shadow: 0 0 13px currentColor; }
 .queue-state.accepted .queue-dot { color: var(--blue); }.queue-state.processing .queue-dot { color: var(--lime); background: var(--lime); }.queue-state.failed .queue-dot { color: var(--red); background: var(--red); }
 
+.conversion-panel { margin-bottom: 20px; padding: 21px; border: 1px solid rgba(185, 247, 93, .2); border-radius: 22px; background: linear-gradient(135deg, rgba(185, 247, 93, .09), transparent 42%), var(--glass); box-shadow: inset 0 1px rgba(255, 255, 255, .1), var(--shadow); backdrop-filter: blur(24px) saturate(145%); -webkit-backdrop-filter: blur(24px) saturate(145%); }.conversion-panel .eyebrow { margin-bottom: 7px; font-size: 10px; }.conversion-funnel { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }.funnel-step { padding: 14px; border: 1px solid rgba(219, 255, 190, .1); border-radius: 15px; background: rgba(3, 20, 12, .22); }.funnel-head { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 12px; }.funnel-head b { color: var(--ink); font: 17px 'DM Mono', monospace; }.funnel-track { height: 8px; margin: 14px 0 8px; overflow: hidden; border-radius: 99px; background: rgba(219, 255, 190, .09); }.funnel-track i { display: block; height: 100%; border-radius: inherit; background: var(--blue); box-shadow: 0 0 14px rgba(158, 216, 255, .45); }.funnel-step.accepted .funnel-track i { background: var(--amber); box-shadow: 0 0 14px rgba(255, 209, 130, .45); }.funnel-step.success .funnel-track i { background: var(--lime); box-shadow: 0 0 14px rgba(185, 247, 93, .45); }.funnel-step small { color: var(--muted); font: 11px 'DM Mono', monospace; }.conversion-notes { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; }.conversion-notes span { padding: 7px 9px; border-radius: 9px; background: rgba(219, 255, 190, .06); color: var(--muted); font-size: 11px; }.conversion-notes b { color: var(--ink); }
+
 .refresh-status { min-height: 18px; margin: -14px 4px 16px; color: var(--muted); font: 11px 'DM Mono', monospace; }
 .secondary:disabled { cursor: wait; opacity: .68; transform: none; }
 
@@ -348,6 +350,8 @@ tbody tr:hover { background: rgba(219, 255, 190, .055); }
   .queue-states { grid-template-columns: 1fr; }
   .queue-state { grid-template-columns: auto 1fr auto; min-height: 0; }
   .queue-state small { grid-column: 3; grid-row: 1; text-align: right; }
+  .conversion-panel { padding: 16px; border-radius: 18px; }
+  .conversion-funnel { grid-template-columns: 1fr; }
   .insights-panel { padding: 16px; border-radius: 18px; }
   .insights-grid { grid-template-columns: 1fr; }
   .insight { min-height: 0; }
