@@ -34,8 +34,9 @@
     <section id="dashboard-view" hidden>
       <header class="topbar">
         <div><div class="eyebrow">PRIVATE OPERATIONS</div><h1>Sticker Bot <span>MedNov</span></h1></div>
-        <div class="top-actions"><span id="system-pill" class="pill">Comprobando...</span><button id="refresh" class="secondary">Actualizar</button><button id="logout" class="ghost">Cerrar sesión</button></div>
+        <div class="top-actions"><span id="system-pill" class="pill">Comprobando...</span><button id="fullscreen" class="ghost" type="button" hidden>Pantalla completa</button><button id="refresh" class="secondary" type="button">Actualizar</button><button id="logout" class="ghost" type="button">Cerrar sesión</button></div>
       </header>
+      <p id="refresh-status" class="refresh-status" aria-live="polite">Esperando actualización.</p>
       <div id="page-error" class="notice error" role="alert" hidden></div>
       <section class="filters" aria-label="Filtros">
         <label>Periodo <select id="period"><option value="today">Hoy</option><option value="24h" selected>Últimas 24 horas</option><option value="7d">Últimos 7 días</option></select></label>
@@ -48,6 +49,10 @@
         <div id="queue" class="queue-states" aria-live="polite"></div>
       </section>
       <section id="cards" class="cards" aria-live="polite"></section>
+      <section class="insights-panel" aria-labelledby="insights-title">
+        <div class="panel-title"><div><div class="eyebrow">TENDENCIAS</div><h2 id="insights-title">Ritmo de operación</h2></div><span>Horario Ciudad de México</span></div>
+        <div id="insights" class="insights-grid" aria-live="polite"></div>
+      </section>
       <div class="grid two"><section class="panel chart-panel"><div class="panel-title"><h2>Procesamiento diario</h2><span>Últimos 7 días</span></div><div id="chart" class="chart"></div></section><section class="panel system-panel"><div class="panel-title"><h2>Estado del sistema</h2></div><div id="system-details"></div></section></div>
       <section class="panel"><div class="panel-title"><h2>Actividad reciente</h2><span>Máximo 100 registros</span></div><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Teléfono</th><th>Tipo</th><th>Estado</th><th>Entrada</th><th>Salida</th><th>Duración</th><th>Error</th></tr></thead><tbody id="activity-body"></tbody></table></div></section>
       <section class="panel"><div class="panel-title"><h2>Usuarios</h2><span>Acciones protegidas</span></div><div class="table-wrap"><table><thead><tr><th>Teléfono</th><th>Creado</th><th>Actividad</th><th>Total</th><th>Última hora</th><th>Estado</th><th></th></tr></thead><tbody id="users-body"></tbody></table></div></section>
