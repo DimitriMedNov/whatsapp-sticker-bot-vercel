@@ -255,6 +255,8 @@ h2 { margin-bottom: 0; font-size: 18px; letter-spacing: -.025em; }
 
 .feed-panel { margin-bottom: 20px; padding: 21px; border: 1px solid rgba(158, 216, 255, .19); border-radius: 22px; background: linear-gradient(135deg, rgba(158, 216, 255, .08), transparent 38%), var(--glass); box-shadow: inset 0 1px rgba(255, 255, 255, .1), var(--shadow); backdrop-filter: blur(24px) saturate(145%); -webkit-backdrop-filter: blur(24px) saturate(145%); }.feed-panel .eyebrow { margin-bottom: 7px; font-size: 10px; color: var(--blue); }.activity-feed { display: grid; gap: 8px; }.feed-event { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 11px; align-items: center; padding: 12px 14px; border: 1px solid rgba(158, 216, 255, .12); border-radius: 14px; background: rgba(9, 30, 26, .2); }.feed-mark { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); box-shadow: 0 0 13px rgba(158, 216, 255, .6); }.feed-event.user_blocked .feed-mark { background: var(--red); box-shadow: 0 0 13px rgba(255, 145, 138, .65); }.feed-event.user_unblocked .feed-mark { background: var(--lime); box-shadow: 0 0 13px rgba(185, 247, 93, .65); }.feed-event strong { display: block; font-size: 13px; }.feed-event p { margin: 3px 0 0; color: var(--muted); font-size: 12px; }.feed-event time { color: var(--muted); font: 11px 'DM Mono', monospace; text-align: right; }.empty-feed { margin: 0; color: var(--muted); font-size: 13px; }
 
+.config-panel { margin-bottom: 20px; padding: 21px; border: 1px solid rgba(219, 255, 190, .16); border-radius: 22px; background: linear-gradient(135deg, rgba(219, 255, 190, .07), transparent 38%), var(--glass); box-shadow: inset 0 1px rgba(255, 255, 255, .1), var(--shadow); backdrop-filter: blur(24px) saturate(145%); -webkit-backdrop-filter: blur(24px) saturate(145%); }.config-panel .eyebrow { margin-bottom: 7px; font-size: 10px; }.runtime-config { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; }.runtime-item { min-height: 76px; padding: 13px; border: 1px solid rgba(219, 255, 190, .1); border-radius: 14px; background: rgba(4, 20, 13, .2); }.runtime-item span { display: block; color: var(--muted); font-size: 11px; }.runtime-item b { display: block; margin-top: 9px; overflow: hidden; color: var(--ink); font: 12px 'DM Mono', monospace; text-overflow: ellipsis; white-space: nowrap; }
+
 .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
 
 .card {
@@ -354,6 +356,8 @@ tbody tr:hover { background: rgba(219, 255, 190, .055); }
   .feed-panel { padding: 16px; border-radius: 18px; }
   .feed-event { grid-template-columns: auto minmax(0, 1fr); }
   .feed-event time { grid-column: 2; text-align: left; }
+  .config-panel { padding: 16px; border-radius: 18px; }
+  .runtime-config { grid-template-columns: 1fr 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {

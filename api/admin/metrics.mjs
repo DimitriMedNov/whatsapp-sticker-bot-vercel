@@ -12,7 +12,7 @@ export default { async fetch(request) {
       access.repository.getAlerts(),
       access.repository.getActivityFeed(),
     ]);
-    return jsonResponse({ ok: true, data: removePrivatePhone({ ...data, error_groups: errorGroups, alerts, activity_feed: activityFeed, system: { ...data.system, supabase_connected: true, meta_configured: config.metaConfigured, version: config.version, refreshed_at: new Date().toISOString() } }) });
+    return jsonResponse({ ok: true, data: removePrivatePhone({ ...data, error_groups: errorGroups, alerts, activity_feed: activityFeed, system: { ...data.system, supabase_connected: true, meta_configured: config.metaConfigured, version: config.version, runtime: config.runtime, refreshed_at: new Date().toISOString() } }) });
   } catch (error) {
     console.error(JSON.stringify({ event: "admin_metrics_error", code: error?.code || "SUPABASE_ERROR" }));
     return adminError("SUPABASE_ERROR");
