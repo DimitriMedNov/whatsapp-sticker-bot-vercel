@@ -203,6 +203,29 @@ h2 { margin-bottom: 0; font-size: 18px; letter-spacing: -.025em; }
 .filters label { min-width: 145px; }
 .filters input, .filters select { padding: 9px 10px; }
 
+.queue-panel {
+  margin-bottom: 20px;
+  padding: 19px 21px 21px;
+  border: 1px solid rgba(185, 247, 93, .22);
+  border-radius: 22px;
+  background: linear-gradient(110deg, rgba(181, 247, 97, .12), transparent 40%), var(--glass-strong);
+  box-shadow: inset 0 1px rgba(255, 255, 255, .13), var(--shadow);
+  backdrop-filter: blur(24px) saturate(145%);
+  -webkit-backdrop-filter: blur(24px) saturate(145%);
+}
+
+.queue-heading { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 17px; }
+.queue-heading .eyebrow { margin-bottom: 7px; font-size: 10px; }
+.queue-live { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font: 11px 'DM Mono', monospace; }
+.queue-live i { width: 7px; height: 7px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 0 4px rgba(185, 247, 93, .12), 0 0 16px var(--lime); }
+.queue-states { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.queue-state { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; min-height: 72px; padding: 12px; border: 1px solid rgba(219, 255, 190, .1); border-radius: 15px; background: rgba(3, 20, 12, .24); }
+.queue-state strong { display: block; font-size: 24px; letter-spacing: -.05em; line-height: 1; }
+.queue-state span:not(.queue-dot) { display: block; margin-top: 4px; color: var(--ink); font-size: 12px; }
+.queue-state small { grid-column: 2; color: var(--muted); font-size: 11px; }
+.queue-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--blue); box-shadow: 0 0 13px currentColor; }
+.queue-state.accepted .queue-dot { color: var(--blue); }.queue-state.processing .queue-dot { color: var(--lime); background: var(--lime); }.queue-state.failed .queue-dot { color: var(--red); background: var(--red); }
+
 .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
 
 .card {
@@ -289,6 +312,11 @@ tbody tr:hover { background: rgba(219, 255, 190, .055); }
   .panel { padding: 15px; border-radius: 18px; }
   .filters { display: grid; grid-template-columns: 1fr 1fr; }
   .filters label { min-width: 0; }
+  .queue-panel { padding: 16px; border-radius: 18px; }
+  .queue-heading { align-items: start; flex-direction: column; margin-bottom: 13px; }
+  .queue-states { grid-template-columns: 1fr; }
+  .queue-state { grid-template-columns: auto 1fr auto; min-height: 0; }
+  .queue-state small { grid-column: 3; grid-row: 1; text-align: right; }
 }
 
 @media (prefers-reduced-motion: reduce) {

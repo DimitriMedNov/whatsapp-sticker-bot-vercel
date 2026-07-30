@@ -43,6 +43,10 @@
         <label>Tipo <select id="type"><option value="">Todos</option><option value="sticker">Sticker</option><option value="batch_sticker">Batch sticker</option></select></label>
         <label>Últimos 4 dígitos <input id="phone-search" inputmode="numeric" maxlength="4" placeholder="0366"></label>
       </section>
+      <section class="queue-panel" aria-labelledby="queue-title">
+        <div class="queue-heading"><div><div class="eyebrow">PULSO OPERATIVO</div><h2 id="queue-title">Cola de procesamiento</h2></div><span class="queue-live"><i></i>Actualización cada 30 s</span></div>
+        <div id="queue" class="queue-states" aria-live="polite"></div>
+      </section>
       <section id="cards" class="cards" aria-live="polite"></section>
       <div class="grid two"><section class="panel chart-panel"><div class="panel-title"><h2>Procesamiento diario</h2><span>Últimos 7 días</span></div><div id="chart" class="chart"></div></section><section class="panel system-panel"><div class="panel-title"><h2>Estado del sistema</h2></div><div id="system-details"></div></section></div>
       <section class="panel"><div class="panel-title"><h2>Actividad reciente</h2><span>Máximo 100 registros</span></div><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Teléfono</th><th>Tipo</th><th>Estado</th><th>Entrada</th><th>Salida</th><th>Duración</th><th>Error</th></tr></thead><tbody id="activity-body"></tbody></table></div></section>
