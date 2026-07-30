@@ -1,14 +1,14 @@
-import { getAdminSession, readUserActionToken } from "../../lib/admin-auth.mjs";
-import { addActionTokens, adminError, createAdminRepository, jsonResponse, readAdminConfig, removePrivatePhone } from "../../lib/admin-api.mjs";
+import { addActionTokens, adminError, jsonResponse, readAdminConfig, removePrivatePhone, requireAdmin } from "../../lib/admin-api.mjs";
 
 export default { async fetch(request) {
   const config = readAdminConfig();
-  if (!getAdminSession(request, config.sessionSecret)) return jsonResponse({ ok: false, error: "No autenticado", code: "UNAUTHORIZED" }, 401);
+  const access = await requireAdmin(request, config);
+  if (!access) return jsonResponse({ ok: false, error: "No autenticado", code: "UNAUTHORIZED" }, 401);
   try {
     if (request.method === "GET") {
       const url = new URL(request.url);
       const page = Math.max(1, Number(url.searchParams.get("page") || 1));
-      const data = await createAdminRepository(config).getUsers({ page, pageSize: 25, search: (url.searchParams.get("search") || "").replace(/\D/g, "").slice(-4) });
+      const data = await access.repository.getUsers({ page, pageSize: 25, search: (url.searchParams.get("search") || "").replace(/\D/g, "").slice(-4) });
       return jsonResponse({ ok: true, data: removePrivatePhone({ ...data, users: addActionTokens(data.users, config.sessionSecret) }) });
     }
     return jsonResponse({ ok: false, error: "Método no permitido", code: "METHOD_NOT_ALLOWED" }, 405);
