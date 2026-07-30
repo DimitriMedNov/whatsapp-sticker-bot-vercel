@@ -38,12 +38,19 @@
       </header>
       <p id="refresh-status" class="refresh-status" aria-live="polite">Esperando actualización.</p>
       <div id="page-error" class="notice error" role="alert" hidden></div>
+      <nav class="dashboard-tabs" aria-label="Secciones del panel" role="tablist">
+        <button id="tab-button-overview" class="dashboard-tab" type="button" role="tab" aria-controls="tab-overview" aria-selected="true" data-tab="overview">Resumen</button>
+        <button id="tab-button-operations" class="dashboard-tab" type="button" role="tab" aria-controls="tab-operations" aria-selected="false" data-tab="operations">Operación</button>
+        <button id="tab-button-analytics" class="dashboard-tab" type="button" role="tab" aria-controls="tab-analytics" aria-selected="false" data-tab="analytics">Analítica</button>
+        <button id="tab-button-system" class="dashboard-tab" type="button" role="tab" aria-controls="tab-system" aria-selected="false" data-tab="system">Sistema</button>
+      </nav>
       <section class="filters" aria-label="Filtros">
         <label>Periodo <select id="period"><option value="today">Hoy</option><option value="24h" selected>Últimas 24 horas</option><option value="7d">Últimos 7 días</option></select></label>
         <label>Estado <select id="status"><option value="">Todos</option><option value="success">Success</option><option value="error">Error</option><option value="rejected">Rechazado</option></select></label>
         <label>Tipo <select id="type"><option value="">Todos</option><option value="sticker">Sticker</option><option value="batch_sticker">Batch sticker</option></select></label>
         <label>Últimos 4 dígitos <input id="phone-search" inputmode="numeric" maxlength="4" placeholder="0366"></label>
       </section>
+      <section id="tab-overview" class="tab-panel" role="tabpanel" aria-labelledby="tab-button-overview">
       <section class="queue-panel" aria-labelledby="queue-title">
         <div class="queue-heading"><div><div class="eyebrow">PULSO OPERATIVO</div><h2 id="queue-title">Cola de procesamiento</h2></div><span class="queue-live"><i></i>Actualización cada 30 s</span></div>
         <div id="queue" class="queue-states" aria-live="polite"></div>
@@ -57,6 +64,12 @@
         <div class="panel-title"><div><div class="eyebrow">EMBUDO DE CONVERSIÓN</div><h2 id="conversion-title">De solicitud a sticker</h2></div><span>Según los filtros activos</span></div>
         <div id="conversion" class="conversion-funnel" aria-live="polite"></div>
       </section>
+      <section class="alerts-panel" aria-labelledby="alerts-title">
+        <div class="panel-title"><div><div class="eyebrow">VIGILANCIA ACTIVA</div><h2 id="alerts-title">Alertas del sistema</h2></div><span>Se evalúan al actualizar</span></div>
+        <div id="alerts" class="alerts" aria-live="polite"></div>
+      </section>
+      </section>
+      <section id="tab-analytics" class="tab-panel" role="tabpanel" aria-labelledby="tab-button-analytics" hidden>
       <section class="insights-panel" aria-labelledby="insights-title">
         <div class="panel-title"><div><div class="eyebrow">TENDENCIAS</div><h2 id="insights-title">Ritmo de operación</h2></div><span>Horario Ciudad de México</span></div>
         <div id="insights" class="insights-grid" aria-live="polite"></div>
@@ -65,22 +78,24 @@
         <div class="panel-title"><div><div class="eyebrow">ATENCIÓN OPERATIVA</div><h2 id="errors-title">Errores accionables</h2></div><span>Últimos 7 días</span></div>
         <div id="error-groups" class="error-groups" aria-live="polite"></div>
       </section>
-      <section class="alerts-panel" aria-labelledby="alerts-title">
-        <div class="panel-title"><div><div class="eyebrow">VIGILANCIA ACTIVA</div><h2 id="alerts-title">Alertas del sistema</h2></div><span>Se evalúan al actualizar</span></div>
-        <div id="alerts" class="alerts" aria-live="polite"></div>
+      <section class="panel chart-panel"><div class="panel-title"><h2>Procesamiento diario</h2><span>Últimos 7 días</span></div><div id="chart" class="chart"></div></section>
       </section>
+      <section id="tab-operations" class="tab-panel" role="tabpanel" aria-labelledby="tab-button-operations" hidden>
       <section class="feed-panel" aria-labelledby="feed-title">
         <div class="panel-title"><div><div class="eyebrow">REGISTRO OPERATIVO</div><h2 id="feed-title">Actividad importante</h2></div><span>Últimos 10 eventos</span></div>
         <div id="activity-feed" class="activity-feed" aria-live="polite"></div>
       </section>
+      <section class="panel"><div class="panel-title"><h2>Actividad reciente</h2><span>Máximo 100 registros</span></div><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Teléfono</th><th>Tipo</th><th>Estado</th><th>Entrada</th><th>Salida</th><th>Duración</th><th>Error</th></tr></thead><tbody id="activity-body"></tbody></table></div></section>
+      <section class="panel"><div class="panel-title"><h2>Usuarios</h2><span>Acciones protegidas</span></div><div class="table-wrap"><table><thead><tr><th>Teléfono</th><th>Creado</th><th>Actividad</th><th>Total</th><th>Última hora</th><th>Estado</th><th></th></tr></thead><tbody id="users-body"></tbody></table></div></section>
+      <section class="panel"><div class="panel-title"><h2>Lotes</h2><span>Más recientes</span></div><div class="table-wrap"><table><thead><tr><th>Teléfono</th><th>Estado</th><th>Recibidos</th><th>Procesados</th><th>Fallidos</th><th>Inicio</th><th>Expira</th><th>Cierre</th></tr></thead><tbody id="batches-body"></tbody></table></div></section>
+      </section>
+      <section id="tab-system" class="tab-panel" role="tabpanel" aria-labelledby="tab-button-system" hidden>
       <section class="config-panel" aria-labelledby="config-title">
         <div class="panel-title"><div><div class="eyebrow">SOLO LECTURA</div><h2 id="config-title">Configuración desplegada</h2></div><span>Sin secretos</span></div>
         <div id="runtime-config" class="runtime-config" aria-live="polite"></div>
       </section>
-      <div class="grid two"><section class="panel chart-panel"><div class="panel-title"><h2>Procesamiento diario</h2><span>Últimos 7 días</span></div><div id="chart" class="chart"></div></section><section class="panel system-panel"><div class="panel-title"><h2>Estado del sistema</h2></div><div id="system-details"></div></section></div>
-      <section class="panel"><div class="panel-title"><h2>Actividad reciente</h2><span>Máximo 100 registros</span></div><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Teléfono</th><th>Tipo</th><th>Estado</th><th>Entrada</th><th>Salida</th><th>Duración</th><th>Error</th></tr></thead><tbody id="activity-body"></tbody></table></div></section>
-      <section class="panel"><div class="panel-title"><h2>Usuarios</h2><span>Acciones protegidas</span></div><div class="table-wrap"><table><thead><tr><th>Teléfono</th><th>Creado</th><th>Actividad</th><th>Total</th><th>Última hora</th><th>Estado</th><th></th></tr></thead><tbody id="users-body"></tbody></table></div></section>
-      <section class="panel"><div class="panel-title"><h2>Lotes</h2><span>Más recientes</span></div><div class="table-wrap"><table><thead><tr><th>Teléfono</th><th>Estado</th><th>Recibidos</th><th>Procesados</th><th>Fallidos</th><th>Inicio</th><th>Expira</th><th>Cierre</th></tr></thead><tbody id="batches-body"></tbody></table></div></section>
+      <section class="panel system-panel"><div class="panel-title"><h2>Estado del sistema</h2></div><div id="system-details"></div></section>
+      </section>
     </section>
   </main>
   <script type="module" src="/admin/admin.js"></script>
