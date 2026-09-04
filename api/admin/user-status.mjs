@@ -4,7 +4,7 @@ import { adminError, jsonResponse, readAdminConfig, requireAdmin } from "../../l
 export default { async fetch(request) {
   const config = readAdminConfig();
   const access = await requireAdmin(request, config);
-  if (!access) return jsonResponse({ ok: false, error: "No autenticado", code: "UNAUTHORIZED" }, 401);
+  if (!access.ok) return access.response;
   if (request.method !== "PATCH") return jsonResponse({ ok: false, error: "Método no permitido", code: "METHOD_NOT_ALLOWED" }, 405);
   let body;
   try { body = await request.json(); } catch { return jsonResponse({ ok: false, error: "Solicitud inválida", code: "INVALID_JSON" }, 400); }

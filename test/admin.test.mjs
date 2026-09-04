@@ -16,11 +16,13 @@ const now = Date.now();
 // Supabase de mentira: la sesión nunca está revocada y cualquier otra RPC falla,
 // para que la suite corra sin red y sin credenciales reales.
 let supabaseUrl = "https://example.supabase.co";
+let sessionCheckFails = false;
 const supabase = createServer((incoming, response) => {
   incoming.resume();
-  const revoked = incoming.url.endsWith("/rpc/admin_is_session_revoked");
-  response.writeHead(revoked ? 200 : 500, { "Content-Type": "application/json" });
-  response.end(revoked ? "false" : JSON.stringify({ message: "supabase no disponible" }));
+  const checkingSession = incoming.url.endsWith("/rpc/admin_is_session_revoked");
+  const ok = checkingSession && !sessionCheckFails;
+  response.writeHead(ok ? 200 : 500, { "Content-Type": "application/json" });
+  response.end(ok ? "false" : JSON.stringify({ message: "supabase no disponible" }));
 });
 
 before(async () => {
@@ -125,6 +127,18 @@ test("bloquear y desbloquear usan booleano y payload inválido se rechaza", asyn
   assert.equal(invalid.status, 400);
   const valid = await userStatus.fetch(request("/api/admin/users/x/status", { method: "PATCH", headers: { cookie }, body: JSON.stringify({ action_id: token, blocked: true }) }));
   assert.equal(valid.status, 500);
+}));
+
+test("si falla la comprobación de sesión responde 503 controlado", async () => withEnv(async () => {
+  sessionCheckFails = true;
+  try {
+    const cookie = sessionCookie(createSession(secret)).split(";")[0];
+    const response = await session.fetch(request("/api/admin/session", { headers: { cookie } }));
+    assert.equal(response.status, 503);
+    assert.equal((await response.json()).code, "SUPABASE_ERROR");
+  } finally {
+    sessionCheckFails = false;
+  }
 }));
 
 test("el webhook público sigue respondiendo y no exige sesión administrativa", async () => {

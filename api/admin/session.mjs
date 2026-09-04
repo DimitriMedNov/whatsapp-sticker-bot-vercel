@@ -2,7 +2,7 @@ import { jsonResponse, readAdminConfig, requireAdmin } from "../../lib/admin-api
 
 export default { async fetch(request) {
   const config = readAdminConfig();
-  return await requireAdmin(request, config)
-    ? jsonResponse({ ok: true, authenticated: true })
-    : jsonResponse({ ok: false, authenticated: false, error: "No autenticado", code: "UNAUTHORIZED" }, 401);
+  const access = await requireAdmin(request, config);
+  if (!access.ok) return access.response;
+  return jsonResponse({ ok: true, authenticated: true });
 } };

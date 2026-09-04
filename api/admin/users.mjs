@@ -3,7 +3,7 @@ import { addActionTokens, adminError, jsonResponse, readAdminConfig, removePriva
 export default { async fetch(request) {
   const config = readAdminConfig();
   const access = await requireAdmin(request, config);
-  if (!access) return jsonResponse({ ok: false, error: "No autenticado", code: "UNAUTHORIZED" }, 401);
+  if (!access.ok) return access.response;
   try {
     if (request.method === "GET") {
       const url = new URL(request.url);

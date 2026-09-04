@@ -3,7 +3,7 @@ import { jsonResponse, adminError, readAdminConfig, removePrivatePhone, requireA
 export default { async fetch(request) {
   const config = readAdminConfig();
   const access = await requireAdmin(request, config);
-  if (!access) return jsonResponse({ ok: false, error: "No autenticado", code: "UNAUTHORIZED" }, 401);
+  if (!access.ok) return access.response;
   try {
     const url = new URL(request.url);
     const filters = { processingType: url.searchParams.get("type"), phoneSuffix: url.searchParams.get("phone"), period: url.searchParams.get("period") };
