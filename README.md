@@ -108,6 +108,9 @@ Ejecuta manualmente, **en orden numérico y sin saltarte ninguna**, desde el SQL
 9. `009_admin_activity_feed.sql` — registro de actividad.
 10. `010_admin_conversion.sql` — embudo de conversión.
 11. `011_admin_daily_chart_window.sql` — corrige la gráfica diaria de siete días.
+12. `012_stale_events_and_index.sql` — cierra eventos colgados, índice por fecha y purga opcional.
+13. `013_admin_queue_window.sql` — acota la cola del panel a 24 horas.
+14. `014_admin_login_attempts.sql` — límite de intentos de login compartido.
 
 Varias migraciones redefinen funciones creadas por migraciones anteriores con
 `create or replace`. Por eso el orden importa y **no debes reejecutar una migración
@@ -140,6 +143,25 @@ https://tu-proyecto.vercel.app/webhook
 ```
 
 ## Seguridad y privacidad
+
+### Límite de intentos en el login
+
+El contador de intentos fallidos vive en `admin_login_attempts` (Supabase), no en
+memoria: cinco fallos por IP bloquean quince minutos, y el tope es el mismo aunque
+Vercel levante varias instancias. Si Supabase no responde, el endpoint recurre a un
+contador local por instancia para no dejar el login abierto de par en par.
+
+### Retención de datos
+
+`processing_events` no se purga sola. La migración `012` deja lista
+`purge_old_processing_events(p_older_than_days)`, que borra eventos ya terminados y los
+lotes sin eventos asociados, pero **nadie la llama**: actívala tú cuando decidas una
+política de retención, añadiendo la llamada al cron de `api/cron/keepalive.mjs`.
+
+`reap_stale_processing_events(p_older_than_minutes)` sí se ejecuta a diario desde ese
+cron. Cierra como `PROCESSING_ABANDONED` los eventos que llevan más de quince minutos
+sin terminar, que de otro modo inflarían la cola del panel para siempre y consumirían
+la cuota horaria del usuario.
 
 ### Firma del webhook
 
