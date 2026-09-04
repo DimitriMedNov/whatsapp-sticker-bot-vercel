@@ -45,6 +45,19 @@ export default { async fetch(request) {
     return jsonResponse({ ok: false, error: "Supabase no está disponible.", code: "SUPABASE_ERROR" }, 503);
   }
 
+  /*
+   * De paso cerramos los eventos que quedaron a medias cuando una invocación
+   * murió antes de completarlos. Si esto falla no arruina el keepalive.
+   */
+  let reaped = null;
+  const reaper = await supabase.rpc("reap_stale_processing_events", { p_older_than_minutes: 15 });
+  if (reaper.error) {
+    console.error(JSON.stringify({ event: "reap_stale_events_error", code: reaper.error.code || "SUPABASE_ERROR" }));
+  } else {
+    reaped = reaper.data ?? 0;
+    if (reaped > 0) console.log(JSON.stringify({ event: "reap_stale_events", reaped }));
+  }
+
   console.log(JSON.stringify({ event: "keepalive", users: result.count ?? 0 }));
-  return jsonResponse({ ok: true, users: result.count ?? 0 });
+  return jsonResponse({ ok: true, users: result.count ?? 0, reaped });
 } };
