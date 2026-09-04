@@ -5,6 +5,12 @@
       "maxDuration": 60
     }
   },
+  "crons": [
+    {
+      "path": "/api/cron/keepalive",
+      "schedule": "0 9 * * *"
+    }
+  ],
   "headers": [
     {
       "source": "/admin",
