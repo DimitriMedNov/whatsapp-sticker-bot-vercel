@@ -1,5 +1,6 @@
-import test from "node:test";
+import test, { after, before } from "node:test";
 import assert from "node:assert/strict";
+import { createServer } from "node:http";
 import { createSession, verifySession, safeSecretCompare, createUserActionToken, readUserActionToken, sessionCookie } from "../lib/admin-auth.mjs";
 import { createAdminRepository, removePrivatePhone } from "../lib/admin-api.mjs";
 import login from "../api/admin/login.mjs";
@@ -12,12 +13,28 @@ const secret = "test-admin-session-secret";
 const password = "test-admin-password";
 const now = Date.now();
 
+// Supabase de mentira: la sesión nunca está revocada y cualquier otra RPC falla,
+// para que la suite corra sin red y sin credenciales reales.
+let supabaseUrl = "https://example.supabase.co";
+const supabase = createServer((incoming, response) => {
+  incoming.resume();
+  const revoked = incoming.url.endsWith("/rpc/admin_is_session_revoked");
+  response.writeHead(revoked ? 200 : 500, { "Content-Type": "application/json" });
+  response.end(revoked ? "false" : JSON.stringify({ message: "supabase no disponible" }));
+});
+
+before(async () => {
+  await new Promise((resolve) => supabase.listen(0, "127.0.0.1", resolve));
+  supabaseUrl = `http://127.0.0.1:${supabase.address().port}`;
+});
+after(() => new Promise((resolve) => supabase.close(resolve)));
+
 function request(url, options = {}) { return new Request(`https://example.test${url}`, options); }
 function withEnv(fn) {
   const old = { ...process.env };
   process.env.ADMIN_DASHBOARD_PASSWORD = password;
   process.env.ADMIN_SESSION_SECRET = secret;
-  process.env.SUPABASE_URL = "https://example.supabase.co";
+  process.env.SUPABASE_URL = supabaseUrl;
   process.env.SUPABASE_SECRET_KEY = "server-only-test-key";
   return Promise.resolve(fn()).finally(() => { for (const key of Object.keys(process.env)) if (!(key in old)) delete process.env[key]; Object.assign(process.env, old); });
 }
