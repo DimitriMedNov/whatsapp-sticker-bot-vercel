@@ -69,6 +69,7 @@ Copia `.env.example` como referencia. Usa valores reales sólo en Vercel o en un
 | --- | --- |
 | `WEBHOOK_VERIFY_TOKEN` | Token que Meta usa para verificar el webhook. |
 | `WHATSAPP_TOKEN` | Token privado para la Cloud API de WhatsApp. |
+| `META_APP_SECRET` | App Secret de la app de Meta. Verifica la firma `X-Hub-Signature-256` de cada webhook. |
 | `PHONE_NUMBER_ID` | ID del número de WhatsApp Business. |
 | `GRAPH_API_VERSION` | Versión de Graph API, por ejemplo `v25.0`. |
 | `SUPABASE_URL` | URL del proyecto de Supabase. |
@@ -86,23 +87,37 @@ npm run check
 npm test
 ```
 
-`npm test` usa `node:test` y mocks. No llama a Meta ni a Supabase. Si tu equipo local usa Node.js `26.x`, npm puede mostrar `EBADENGINE`; el runtime desplegado debe permanecer en `24.x`.
+`npm test` usa `node:test` y mocks. No llama a Meta ni a Supabase: los tests
+administrativos levantan un servidor HTTP local que hace de Supabase, así que la suite
+corre sin red y sin credenciales reales. Si tu equipo local usa Node.js `26.x`, npm puede mostrar `EBADENGINE`; el runtime desplegado debe permanecer en `24.x`.
 
 ## Migraciones de Supabase
 
 Las migraciones son idempotentes y no destruyen información. No se ejecutan automáticamente desde este repositorio.
 
-Ejecuta manualmente, en este orden, desde el SQL Editor de Supabase o desde tu flujo controlado de migraciones:
+Ejecuta manualmente, **en orden numérico y sin saltarte ninguna**, desde el SQL Editor de Supabase o desde tu flujo controlado de migraciones:
 
-1. `supabase/migrations/001_sticker_bot_schema.sql`
-2. `supabase/migrations/002_claim_sticker_request.sql`
-3. `supabase/migrations/003_admin_dashboard_rpc.sql`
+1. `001_sticker_bot_schema.sql` — tablas, índices y RLS.
+2. `002_claim_sticker_request.sql` — RPC de reclamo y transiciones de evento.
+3. `003_admin_dashboard_rpc.sql` — RPC administrativas base.
+4. `004_admin_sessions_audit.sql` — revocación de sesiones y auditoría de acciones.
+5. `005_admin_queue_metrics.sql` — cola de procesamiento.
+6. `006_admin_trends_metrics.sql` — tendencias y horas pico.
+7. `007_admin_error_groups.sql` — agrupación de errores.
+8. `008_admin_alerts.sql` — alertas operativas.
+9. `009_admin_activity_feed.sql` — registro de actividad.
+10. `010_admin_conversion.sql` — embudo de conversión.
+11. `011_admin_daily_chart_window.sql` — corrige la gráfica diaria de siete días.
+
+Varias migraciones redefinen funciones creadas por migraciones anteriores con
+`create or replace`. Por eso el orden importa y **no debes reejecutar una migración
+antigua después de una más reciente**: volver a aplicar `003` sobre `004`, por ejemplo,
+restauraría `admin_set_user_blocked` sin su registro de auditoría. Si necesitas
+reconstruir el esquema, ejecuta la secuencia completa de principio a fin.
 
 La primera crea `bot_users`, `batch_sessions`, `processing_events`, índices y RLS sin políticas públicas. La segunda crea la RPC `claim_sticker_request` y las RPC auxiliares de transición de eventos. El acceso de ejecución queda revocado para `public`, `anon` y `authenticated`, y se concede al rol backend `service_role`.
 
 No almacenes imágenes, URLs firmadas, nombres de perfil ni payloads completos en Supabase. Sólo se conservan teléfono, `message_id`, tipo, estado, tamaños, duración, errores técnicos y contadores de lote.
-
-La migración `003_admin_dashboard_rpc.sql` es idempotente y agrega las RPC administrativas. Ejecútala manualmente en el SQL Editor de Supabase después de las dos migraciones anteriores; no se ejecuta desde este repositorio ni durante el despliegue.
 
 ## Panel administrativo
 
@@ -110,11 +125,11 @@ Configura `ADMIN_DASHBOARD_PASSWORD` y `ADMIN_SESSION_SECRET` en Vercel como var
 
 El panel muestra volumen de stickers, usuarios activos, lotes, errores, tasa de éxito, duración y tamaño promedio, una gráfica diaria de siete días, actividad reciente, usuarios y lotes paginados. Los teléfonos se enmascaran como `********0366`; el navegador nunca recibe el número completo. Bloquear o desbloquear requiere confirmación visual y utiliza un identificador de acción cifrado que sólo puede resolver el backend.
 
-Si una métrica falla, el panel muestra `No se pudieron cargar las métricas. Intenta nuevamente.` y permite reintentar con **Actualizar**. La actualización automática ocurre cada 60 segundos mientras la pestaña está visible y se detiene al ocultarla.
+Si una métrica falla, el panel muestra `No se pudieron cargar las métricas. Intenta nuevamente.` y permite reintentar con **Actualizar**. La actualización automática ocurre cada 30 segundos mientras la pestaña está visible y se detiene al ocultarla.
 
 ## Configuración en Vercel
 
-En el proyecto `whatsapp-sticker-bot-vercel`, abre `Settings → Environment Variables` y añade las ocho variables del apartado anterior. Configúralas en los entornos que realmente uses (`Production`, `Preview` y/o `Development`). `SUPABASE_SECRET_KEY`, `ADMIN_DASHBOARD_PASSWORD` y `ADMIN_SESSION_SECRET` deben ser variables privadas de servidor.
+En el proyecto `whatsapp-sticker-bot-vercel`, abre `Settings → Environment Variables` y añade las nueve variables del apartado anterior. Configúralas en los entornos que realmente uses (`Production`, `Preview` y/o `Development`). `SUPABASE_SECRET_KEY`, `ADMIN_DASHBOARD_PASSWORD` y `ADMIN_SESSION_SECRET` deben ser variables privadas de servidor.
 
 Tras aplicar las migraciones y guardar las variables, realiza un redeploy desde `Deployments → ... → Redeploy` o mediante el flujo de despliegue habitual del proyecto. Este cambio local no hace deploy automáticamente.
 
@@ -125,6 +140,23 @@ https://tu-proyecto.vercel.app/webhook
 ```
 
 ## Seguridad y privacidad
+
+### Firma del webhook
+
+Meta firma cada `POST` con `X-Hub-Signature-256`, un HMAC-SHA256 del cuerpo crudo
+usando el App Secret. `api/webhook.mjs` lo verifica antes de procesar nada y responde
+`403` si la firma no coincide o falta. Sin esta comprobación, cualquiera que conozca la
+URL podría inyectar eventos falsos y hacer que el bot envíe mensajes a números
+arbitrarios con tu cuota de WhatsApp.
+
+Copia el App Secret desde `Meta for Developers → tu app → Configuración → Básica` y
+guárdalo como `META_APP_SECRET` en Vercel.
+
+**Si `META_APP_SECRET` no está configurado, el webhook acepta el evento y registra
+`webhook_signature_unverified` en los logs**, para que un despliegue sin la variable no
+deje el bot caído. Es un modo de transición, no un estado deseable: configura la
+variable en cuanto despliegues y confirma que ese aviso desaparece de los logs. Para
+exigir la firma siempre, trata `UNCONFIGURED` como `INVALID` en `api/webhook.mjs`.
 
 - No se imprimen tokens, claves, imágenes, URLs firmadas completas ni payloads innecesarios.
 - Los logs estructurados muestran sólo IDs de mensaje, tipo, estado, tamaños, duración y el teléfono enmascarado como `***5678`.
