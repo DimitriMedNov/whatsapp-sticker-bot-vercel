@@ -5,6 +5,7 @@ import { createSticker } from "../lib/stickers.mjs";
 import { createProcessor } from "../lib/processor.mjs";
 import { normalizeRecipient } from "../lib/phone.mjs";
 import { readConfig, validateConfig } from "../lib/config.mjs";
+import { SIGNATURE_HEADER, verifyWebhookSignature } from "../lib/signature.mjs";
 
 const config = readConfig();
 const processedMessageIds = new Set();
@@ -92,9 +93,20 @@ export default {
     }
 
     if (request.method === "POST") {
+      const rawBody = await request.text();
+      const signature = verifyWebhookSignature(rawBody, request.headers.get(SIGNATURE_HEADER), config.metaAppSecret);
+
+      if (signature === "INVALID") {
+        console.warn(JSON.stringify({ event: "webhook_signature_rejected" }));
+        return new Response("Forbidden", { status: 403 });
+      }
+      if (signature === "UNCONFIGURED") {
+        console.warn(JSON.stringify({ event: "webhook_signature_unverified", detail: "META_APP_SECRET no está configurado" }));
+      }
+
       let payload;
       try {
-        payload = await request.json();
+        payload = JSON.parse(rawBody);
       } catch {
         return jsonResponse({ ok: false, error: "JSON inválido" }, 400);
       }
