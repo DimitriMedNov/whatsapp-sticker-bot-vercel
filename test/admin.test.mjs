@@ -17,12 +17,22 @@ const now = Date.now();
 // para que la suite corra sin red y sin credenciales reales.
 let supabaseUrl = "https://example.supabase.co";
 let sessionCheckFails = false;
+// RPC que deben responder algo concreto; el resto falla con 500 a propósito,
+// que es lo que varios tests necesitan para comprobar el manejo de errores.
+const rpcResponses = new Map();
 const supabase = createServer((incoming, response) => {
   incoming.resume();
-  const checkingSession = incoming.url.endsWith("/rpc/admin_is_session_revoked");
-  const ok = checkingSession && !sessionCheckFails;
-  response.writeHead(ok ? 200 : 500, { "Content-Type": "application/json" });
-  response.end(ok ? "false" : JSON.stringify({ message: "supabase no disponible" }));
+  const name = incoming.url.split("/rpc/")[1] || "";
+  const checkingSession = name === "admin_is_session_revoked" && !sessionCheckFails;
+  const canned = rpcResponses.get(name);
+
+  if (checkingSession || canned !== undefined) {
+    response.writeHead(200, { "Content-Type": "application/json" });
+    response.end(JSON.stringify(checkingSession ? false : canned));
+    return;
+  }
+  response.writeHead(500, { "Content-Type": "application/json" });
+  response.end(JSON.stringify({ message: "supabase no disponible" }));
 });
 
 before(async () => {
@@ -139,6 +149,24 @@ test("si falla la comprobación de sesión responde 503 controlado", async () =>
   } finally {
     sessionCheckFails = false;
   }
+}));
+
+test("el límite de intentos compartido bloquea el login con 429", async () => withEnv(async () => {
+  rpcResponses.set("admin_login_guard", { limited: true, failures: 5, retry_after_seconds: 640 });
+  try {
+    const response = await login.fetch(request("/api/admin/login", { method: "POST", body: JSON.stringify({ password }) }));
+    assert.equal(response.status, 429);
+    assert.equal((await response.json()).code, "RATE_LIMITED");
+    assert.equal(response.headers.get("retry-after"), "640");
+  } finally {
+    rpcResponses.delete("admin_login_guard");
+  }
+}));
+
+test("si el límite compartido no responde, el login sigue funcionando", async () => withEnv(async () => {
+  const response = await login.fetch(request("/api/admin/login", { method: "POST", body: JSON.stringify({ password }) }));
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("set-cookie"), /HttpOnly/);
 }));
 
 test("el webhook público sigue respondiendo y no exige sesión administrativa", async () => {
