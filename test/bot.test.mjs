@@ -12,7 +12,8 @@ function makeMeta({ mimeType = "image/jpeg", fileSize = 100, bytes = 100, sends 
     sends,
     stickerSends: [],
     async getImageInfo() { return { url: "https://example.invalid/media", mimeType, fileSize }; },
-    async downloadImage() { return Buffer.alloc(bytes); },
+    downloads: 0,
+    async downloadImage() { this.downloads += 1; return Buffer.alloc(bytes); },
     async uploadSticker() { return "sticker-id"; },
     async sendSticker(payload) { this.stickerSends.push(payload); },
     async sendText(payload) { sends.push(payload); },
@@ -126,6 +127,27 @@ for (const [reason, expected] of [["BLOCKED", "bloqueado"], ["FILE_TOO_LARGE", "
     assert.match(meta.sends.at(-1).text, new RegExp(expected));
   });
 }
+
+test("no descarga la imagen si la solicitud se rechaza", async () => {
+  for (const reason of ["BLOCKED", "HOURLY_LIMIT", "DUPLICATE"]) {
+    const meta = makeMeta();
+    const store = makeStore({ claim: { allowed: false, reason } });
+    await createProcessor({ store, meta, createSticker: async () => Buffer.from("sticker") })
+      .processMessage({ id: `nodownload-${reason}`, type: "image", image: { id: "media-1" } }, phone);
+    assert.equal(meta.downloads, 0, `${reason} no debe descargar la imagen`);
+    assert.equal(store.calls.claims.length, 1);
+  }
+});
+
+test("una imagen aceptada sí se descarga y se registra su tamaño real", async () => {
+  const meta = makeMeta({ fileSize: null, bytes: 2048 });
+  const store = makeStore();
+  await createProcessor({ store, meta, createSticker: async () => Buffer.from("sticker") })
+    .processMessage({ id: "download-1", type: "image", image: { id: "media-1" } }, phone);
+  assert.equal(meta.downloads, 1);
+  assert.equal(meta.stickerSends.length, 1);
+  assert.equal(store.calls.success.length, 1);
+});
 
 test("ignora mensaje duplicado sin segunda respuesta", async () => {
   const meta = makeMeta();
