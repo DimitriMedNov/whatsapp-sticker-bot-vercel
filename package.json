@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "for file in api/webhook.mjs api/admin/*.mjs lib/*.mjs; do node --check \"$file\" || exit 1; done",
+    "check": "for file in api/webhook.mjs api/admin/*.mjs api/cron/*.mjs lib/*.mjs; do node --check \"$file\" || exit 1; done",
     "test": "node --test test/*.test.mjs"
   },
   "engines": {
