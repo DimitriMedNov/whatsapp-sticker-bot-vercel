@@ -1,5 +1,8 @@
 # WhatsApp Sticker Bot para Vercel
 
+[![Pruebas](https://github.com/DimitriMedNov/whatsapp-sticker-bot-vercel/actions/workflows/ci.yml/badge.svg)](https://github.com/DimitriMedNov/whatsapp-sticker-bot-vercel/actions/workflows/ci.yml)
+[![Licencia: MIT](https://img.shields.io/badge/licencia-MIT-blue.svg)](https://github.com/DimitriMedNov/whatsapp-sticker-bot-vercel/blob/main/LICENSE)
+
 Bot de WhatsApp que convierte imágenes recibidas en stickers y los devuelve al mismo chat. Corre como una función serverless de Vercel y usa la Cloud API de WhatsApp de Meta. Supabase conserva únicamente teléfonos, estados, contadores y metadatos técnicos; las imágenes nunca se guardan en Supabase ni en disco.
 
 ## Arquitectura
